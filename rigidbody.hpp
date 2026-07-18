@@ -1,5 +1,4 @@
 #pragma once
-#include <cmath>
 
 
 enum class ShapeType { CIRCLE, BOX };
@@ -25,20 +24,36 @@ class RigidBody {
 private:
     Vector2D position;
     Vector2D velocity;
-    Vector2D force;
+    Vector2D totalForce;
     float inverseMass; 
+    float mass;
+    Shape* shape;
     
 
     // the inverse is stored for calculating acceleration (a = F * 1/m)
     // divisions are more costly/slower than multiplications
 
 public:
-    RigidBody(float x, float y, float mass) {
+    RigidBody(float x, float y, float objectMass, ShapeType objectShape) {
         position = {x, y};
         velocity = {0.0f, 0.0f};
-        force = {0.0f, 0.0f};
-        inverseMass = (mass > 0.0f) ? (1.0f / mass) : 0.0f;
+        totalForce = {0.0f, 0.0f};
+        mass = objectMass;
+        inverseMass = (objectMass > 0.0f) ? (1.0f / objectMass) : 0.0f;
+        shape = {objectShape};
+
     }
+
+    const Shape* getShape() const { return shape; }
+
+    const float& getPositionX() const { return position.x; }
+    const float& getPositionY() const { return position.y; }
+
+    const float& getVelocityX() const { return velocity.x; }
+    const float& getVelocityY() const { return velocity.y; }
+
+    const float& getMass() const { return mass; }
+    const float& getInverseMass() const { return inverseMass; }
 
     void integrate_pos(float dt) {
         position.x += velocity.x * dt;
@@ -46,9 +61,19 @@ public:
     }
 
     void calculate_velocity(float dt) {
-        float ax, ay = (force.x * inverseMass, force.y * inverseMass);
+        float ax, ay = (totalForce.x * inverseMass, totalForce.y * inverseMass);
         velocity.x += ax * dt;
         velocity.y += ay * dt;
     }
+
+    void add_forces(Vector2D force) {
+        totalForce.x += force.x;
+        totalForce.y += force.y;
+    }
+
+    void reset_forces() {
+        totalForce = {0.0f, 0.0f};
+    }
+
 
 };
