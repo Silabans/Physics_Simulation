@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <chrono>
 #include <thread>
-
+#include "forces.hpp"
 
 int main() {
     using clock = std::chrono::high_resolution_clock;
@@ -15,6 +15,12 @@ int main() {
     // For example, in 0.20s, 20 physics updates happen but the frame may only update once or twice
     // by aggregating the final outcome of the 20 updates
     double accumulator = 0.0;
+
+    // body initialisation
+    RigidBody bodyA = RigidBody{40.0, 10.0, 2.0, ShapeType::CIRCLE};
+    RigidBody bodyB = RigidBody{180.0, 70.0, 1.5, ShapeType::CIRCLE};
+
+    std::vector<RigidBody> allBodies = {bodyA, bodyB};
 
     bool is_running = true;
     while (is_running) {
@@ -30,9 +36,14 @@ int main() {
         accumulator += frame_time;
 
         while (accumulator > dt) {
-            // Insert physics processing
+            update_contact(bodyA, bodyB);
 
-            accumulator -= dt;
+            // updating velocity and position of each body
+            for (RigidBody body : allBodies) {
+                update_noncontact(body);
+                body.calculate_velocity(dt);
+                body.integrate_pos(dt);
+            }
         }
 
     }
