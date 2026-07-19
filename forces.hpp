@@ -28,8 +28,8 @@ bool detect_collision(RigidBody& A, RigidBody& B) {
 
 Vector2D calculate_force(const RigidBody& body) {
     // Momentum
-    float mx = body.getVelocityX() * body.getMass();
-    float my = body.getVelocityY() * body.getMass();
+    double mx = body.getVelocityX() * body.getMass();
+    double my = body.getVelocityY() * body.getMass();
 
     // Force
     return {mx * 0.01, my * 0.01};

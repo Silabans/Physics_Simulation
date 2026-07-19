@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\Physics_Simulation.dir/objects.a
+C:\Users\USER\mingw64\bin\ar.exe qc CMakeFiles\Physics_Simulation.dir/objects.a @CMakeFiles\Physics_Simulation.dir\objects1.rsp
+C:\Users\USER\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\Physics_Simulation.dir/objects.a -Wl,--no-whole-archive -o Physics_Simulation.exe -Wl,--out-implib,libPhysics_Simulation.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\Physics_Simulation.dir\linkLibs.rsp

@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build/cmake_install.cmake",
+		"C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build/_deps/raylib-build/cmake_install.cmake",
+		"C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build/_deps/raylib-build/raylib/cmake_install.cmake",
+		"C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build/_deps/raylib-build/raylib/external/glfw/cmake_install.cmake",
+		"C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build/_deps/raylib-build/raylib/external/glfw/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

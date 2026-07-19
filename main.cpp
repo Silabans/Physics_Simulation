@@ -16,9 +16,13 @@ int main() {
     // by aggregating the final outcome of the 20 updates
     double accumulator = 0.0;
 
+    // shapes initialisation
+    Circle* circleA = new Circle(12.0f);
+    Circle* circleB = new Circle(8.0f);
+
     // body initialisation
-    RigidBody bodyA = RigidBody{40.0, 10.0, 2.0, ShapeType::CIRCLE};
-    RigidBody bodyB = RigidBody{180.0, 70.0, 1.5, ShapeType::CIRCLE};
+    RigidBody bodyA = RigidBody{40.0, 10.0, 2.0, circleA};
+    RigidBody bodyB = RigidBody{180.0, 70.0, 1.5, circleB};
 
     std::vector<RigidBody> allBodies = {bodyA, bodyB};
 

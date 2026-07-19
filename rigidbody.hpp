@@ -4,7 +4,15 @@
 enum class ShapeType { CIRCLE, BOX };
 
 // shape superclass
-struct Shape { ShapeType type; };
+struct Shape { 
+    ShapeType type;
+
+    // this ensures that destruction occurs for all instantiated subclasses,
+    // and not just the Shape superclass
+    // -> virtual: to involve the subclass
+    // -> ~Shape(): the ~ denotes a destructor of the superclass
+    virtual ~Shape() = default;
+};
 
 struct Circle : Shape {
     float radius;
@@ -34,13 +42,13 @@ private:
     // divisions are more costly/slower than multiplications
 
 public:
-    RigidBody(float x, float y, float objectMass, ShapeType objectShape) {
+    RigidBody(float x, float y, float objectMass, Shape* objectShape) {
         position = {x, y};
         velocity = {0.0f, 0.0f};
         totalForce = {0.0f, 0.0f};
         mass = objectMass;
         inverseMass = (objectMass > 0.0f) ? (1.0f / objectMass) : 0.0f;
-        shape = {objectShape};
+        shape = objectShape;
 
     }
 
@@ -75,5 +83,10 @@ public:
         totalForce = {0.0f, 0.0f};
     }
 
+    // Destructor: Ensures that the object is fully removed from the heap memory to prevent 
+    // taking up unnecessary space after the object is removed
+    ~RigidBody() {
+        delete shape;
+    }
 
 };
