@@ -71,6 +71,7 @@ public:
     // Position Setters to fix wall sinking
     void setPositionX(float new_pos) { position.x = new_pos; }
     void setPositionY(float new_pos) { position.y = new_pos; }
+    void setPosition(Vector2D new_pos) { position = new_pos; }
 
 
     void applyImpulse(Vector2D impulse) {

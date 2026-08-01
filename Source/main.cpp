@@ -19,29 +19,39 @@ int main() {
     double accumulator = 0.0;
     const double dt = 0.01;
 
-    // shapes initialisation using unique pointers
-    auto circleA = std::make_unique<Circle>(30.0f);
-    auto circleB = std::make_unique<Circle>(20.0f);
+    // body initialisation using unique pointers (to store the objects in the heap rather
+    // than the stack => more spacious)
+    std::vector<std::unique_ptr<RigidBody>> bodies; 
 
-    // body initialisation
-    RigidBody bodyA(500.0f, 550.0f, 2.0f, std::move(circleA)); // std::move() is used to transfer ownership since unique_ptr cannot be copied
-    RigidBody bodyB(500.0f, 100.0f, 1.5f, std::move(circleB));
+    // create 10 randomly generated balls
+    for (int i = 0; i < 10; ++i) {
+        float radius = 15.0f + static_cast<float>(rand() % 20); // radius from 15 to 45 pixels
+        float x = 80.0f + static_cast<float>(rand() % 620);
+        float y = 50.0f + static_cast<float>(rand() % 400);
+        float mass = radius * 0.1f; // mass proportional to size
 
-    std::vector<RigidBody*> allBodies = {&bodyA, &bodyB};
+        auto circle = std::make_unique<Circle>(radius);
+        // make a unique pointer
+        bodies.push_back(std::make_unique<RigidBody>(x, y, mass, std::move(circle)));
+    }
 
     while (!WindowShouldClose()) { // runs while window is open
         double frame_time = GetFrameTime(); // delta time in seconds
         if (frame_time > 0.20) {
             frame_time = 0.20;
         }
-
         accumulator += frame_time;
 
+        int impulseIterations = 4;
+
         while (accumulator > dt) {
-            resolve_circle_collision(bodyA, bodyB);
+            // resolve 4 times to account for multibody collisions (more than 2 bodies colliding)
+            for (int i = 0; i < impulseIterations; ++i) {
+                resolve_all_collisions(bodies);
+            }
 
             // updating velocity and position of each body
-            for (RigidBody* body : allBodies) { // (*) -> pass in the pointer (not by value or reference)
+            for (auto& body : bodies) { // (*) -> pass in the pointer (not by value or reference)
                 // pointer used because if passed by value, 
                 // a temp copy will be made and destroyed after the the function completes (local only)
                 update_noncollision(*body);
@@ -59,7 +69,7 @@ int main() {
         BeginDrawing();
             ClearBackground(BLACK);
 
-            for (const RigidBody* body : allBodies) {
+            for (const auto& body : bodies) {
                 const Shape* shape = body->getShape(); // Shape, not ShapeType
 
                 if (shape->type == ShapeType::CIRCLE) {

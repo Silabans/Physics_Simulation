@@ -12,6 +12,7 @@ float squaring(float value) {
 inline Vector2D operator-(const Vector2D& a, const Vector2D& b) { return {a.x - b.x, a.y - b.y}; }
 inline Vector2D operator+(const Vector2D& a, const Vector2D& b) { return {a.x + b.x, a.y + b.y}; }
 inline Vector2D operator*(const Vector2D& a, const Vector2D& b) { return {a.x * b.x, a.y * b.y}; }
+inline Vector2D operator*(const Vector2D& a, const float scalar) { return {a.x * scalar, a.y * scalar}; }
 inline float dot(const Vector2D& a, const Vector2D& b) { return a.x * b.x + a.y * b.y; }
 
 
@@ -35,32 +36,56 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
     float rb = circleB->radius;
     float total_radius = ra + rb;
 
+    float invMassSum = a.getInverseMass() + b.getInverseMass();
     Vector2D a_pos = a.getPosition();
     Vector2D b_pos = b.getPosition();
 
     Vector2D delta = a_pos - b_pos;
     float square_dist = dot(delta, delta);
+    float dist = std::sqrt(square_dist);
 
-    if (square_dist >= squaring(total_radius)) return;
+    if (square_dist >= squaring(total_radius) || square_dist == 0.0f) return;
 
-
-
-
-    float e = 0.80f; // coefficient of restitution
-
-    float invMassSum = a.getInverseMass() + b.getInverseMass();
     Vector2D va = a.getVelocity();
     Vector2D vb = b.getVelocity();
     Vector2D vrel = calculate_vrel(a, b);
 
-    float jx = (-(1 + e)*vrel.x) / invMassSum;
-    float jy = (-(1 + e)*vrel.y) / invMassSum;
+    Vector2D inverseDist = {(1.0f / dist), (1.0f / dist)};
+    Vector2D normal = delta * inverseDist;
+    float projectedVel = dot(vrel, normal);
 
-    Vector2D delta_va = {jx*a.getInverseMass(), jy*a.getInverseMass()};
-    Vector2D delta_vb = {jx*b.getInverseMass(), jy*b.getInverseMass()};
+    // if A and B are moving away , skip the impulse resolution 
+    if (projectedVel < 0.0f) { 
+        float e = 0.90f; // coefficient of restitution
 
-    a.setVelocity(va - delta_va);
-    b.setVelocity(vb + delta_vb);
+        float j = -(1.0f + e)*projectedVel / invMassSum; // magnitude of impulse
+        Vector2D impulse = normal * j;
+
+        a.setVelocity(va + impulse*a.getInverseMass());
+        b.setVelocity(vb - impulse*b.getInverseMass());
+    }
+
+    // resolve overlapping circles
+    float overlap = total_radius - dist;
+    float percent = 0.8f;
+
+    // inverse mass is included to ensure that the distance corrected is inversely 
+    // proportional to mass (the larger ball is displaced by a smaller amount)
+    Vector2D correction = normal * (overlap / invMassSum) * percent; 
+    a.setPosition(a.getPosition() + correction * a.getInverseMass()); // divide back by its mass
+    b.setPosition(b.getPosition() - correction * b.getInverseMass());
+}
+
+
+void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
+    int count = bodies.size();
+
+    for (int i = 0; i < count; ++i) {
+        for (int j = 0; j < count; ++j) {
+            if (i == j) continue;
+            resolve_circle_collision(*bodies[i], *bodies[j]);
+        }
+    }
 }
 
 
@@ -68,6 +93,9 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
 void update_noncollision(RigidBody& body) {
     float fg = 600.0f * body.getMass();
     body.add_forces({0.0f, fg});
+
+    // wind
+    body.add_forces({200.0f, 0.0f});
 
     // air resistance
     // opposes the motion
