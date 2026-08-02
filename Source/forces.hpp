@@ -56,7 +56,7 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
 
     // if A and B are moving away , skip the impulse resolution 
     if (projectedVel < 0.0f) { 
-        float e = 0.90f; // coefficient of restitution
+        float e = 0.70f; // coefficient of restitution
 
         float j = -(1.0f + e)*projectedVel / invMassSum; // magnitude of impulse
         Vector2D impulse = normal * j;
@@ -67,7 +67,7 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
 
     // resolve overlapping circles
     float overlap = total_radius - dist;
-    float percent = 0.8f;
+    float percent = 0.6f;
 
     // inverse mass is included to ensure that the distance corrected is inversely 
     // proportional to mass (the larger ball is displaced by a smaller amount)
@@ -81,8 +81,7 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     int count = bodies.size();
 
     for (int i = 0; i < count; ++i) {
-        for (int j = 0; j < count; ++j) {
-            if (i == j) continue;
+        for (int j = i + 1; j < count; ++j) {
             resolve_circle_collision(*bodies[i], *bodies[j]);
         }
     }
@@ -120,32 +119,32 @@ void resolve_boundaries(RigidBody& body) {
     int x = body.getPositionX();
     int y = body.getPositionY();
 
-    float restitution = 0.8f;
-    float restThreshold = 30.0f;
+    float restitution = 0.7f;
+    float restThreshold = 50.0f;
 
-    if (x + radius >= 798) {
+    if (x + radius >= 800.0f) {
         if (std::abs(vx) < restThreshold) {
             body.setVelocityX(0.0f);
             body.setPositionX(800.0f - radius);
         } else body.setVelocityX(-std::abs(vx) * restitution);
 
-    } else if (x - radius <= 2) {
+    } else if (x - radius <= 0.0f) {
         if (std::abs(vx) < restThreshold) {
             body.setVelocityX(0.0f);
-            body.setVelocityX(0.0f + radius);
+            body.setPositionX(radius);
         } else body.setVelocityX(std::abs(vx) * restitution);
     }
 
-    if (y - radius <= 2) {
+    if (y - radius <= 0.0f) {
         if (std::abs(vy) < restThreshold) {
             body.setVelocityY(0.0f);
-            body.setPositionY(5.0f + radius);
+            body.setPositionY(radius);
         } else body.setVelocityY(std::abs(vy) * restitution);
 
-    } else if (y + radius >= 598) {
+    } else if (y + radius >= 600.0f) {
         if (std::abs(vy) < restThreshold) {
             body.setVelocityY(0.0f);
-            body.setPositionY(598.0f - radius);
+            body.setPositionY(600.0f - radius);
         } else body.setVelocityY(-std::abs(vy) * restitution);
     }
 }

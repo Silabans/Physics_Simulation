@@ -39,7 +39,6 @@ private:
     std::unique_ptr<Shape> shape; // smart pointer => handles destruction automatically
     Color color;
     
-
     // the inverse is stored for calculating acceleration (a = F * 1/m)
     // divisions are more costly/slower than multiplications
 

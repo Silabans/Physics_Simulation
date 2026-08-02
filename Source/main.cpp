@@ -35,14 +35,14 @@ int main() {
 
     // create 10 randomly generated balls
     Color colors[7] = {RED, BLUE, YELLOW, GREEN, WHITE, PURPLE, ORANGE};
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 30; ++i) {
         std::uniform_int_distribution<std::size_t> distrib(0, 6);
         Color color = colors[distrib(random_engine())];
 
-        float radius = 15.0f + static_cast<float>(rand() % 20); // radius from 15 to 45 pixels
-        float x = 80.0f + static_cast<float>(rand() % 620);
-        float y = 50.0f + static_cast<float>(rand() % 400);
-        float mass = radius * 0.1f; // mass proportional to size
+        float radius = 12.0f + static_cast<float>(rand() % 16); // radius from 15 to 45 pixels
+        float x = 40.0f + static_cast<float>(rand() % 720);
+        float y = 40.0f + static_cast<float>(rand() % 520);
+        float mass = radius*radius*radius * 0.002f; // mass proportional to size
 
         auto circle = std::make_unique<Circle>(radius);
         // make a unique pointer
