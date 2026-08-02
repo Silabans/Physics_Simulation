@@ -37,18 +37,20 @@ private:
     float inverseMass; 
     float mass;
     std::unique_ptr<Shape> shape; // smart pointer => handles destruction automatically
+    Color color;
     
 
     // the inverse is stored for calculating acceleration (a = F * 1/m)
     // divisions are more costly/slower than multiplications
 
 public:
-    RigidBody(float x, float y, float objectMass, std::unique_ptr<Shape> objectShape)
+    RigidBody(float x, float y, float objectMass, std::unique_ptr<Shape> objectShape, Color objectColor)
         : position{x, y},
           velocity{0.0f, 0.0f},
           totalForce{0.0f, 0.0f},
           mass(objectMass),
           inverseMass(objectMass > 0.0f ? 1.0f / objectMass : 0.0f),
+          color(objectColor),
           shape(std::move(objectShape)) {}
         
     const Shape* getShape() const { return shape.get(); } // gets the actual instance using the pointer
@@ -63,6 +65,8 @@ public:
 
     const float getMass() const { return mass; }
     const float getInverseMass() const { return inverseMass; }
+
+    const Color getColor() const { return color; }
 
     void setVelocityX(float new_vel) { velocity.x = new_vel; }
     void setVelocityY(float new_vel) { velocity.y = new_vel; }

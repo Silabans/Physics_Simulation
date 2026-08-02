@@ -2,8 +2,18 @@
 #include <vector>
 #include <algorithm>
 #include <thread>
+#include <random>
 #include "forces.hpp"
 #include "rigidbody.hpp"
+
+
+// reusable random device seeding
+std::mt19937& random_engine() {
+    // initialised once in the first function call (static var)
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    return gen;
+}
 
 int main() {
     const int screenWidth = 800;
@@ -24,7 +34,11 @@ int main() {
     std::vector<std::unique_ptr<RigidBody>> bodies; 
 
     // create 10 randomly generated balls
+    Color colors[7] = {RED, BLUE, YELLOW, GREEN, WHITE, PURPLE, ORANGE};
     for (int i = 0; i < 10; ++i) {
+        std::uniform_int_distribution<std::size_t> distrib(0, 6);
+        Color color = colors[distrib(random_engine())];
+
         float radius = 15.0f + static_cast<float>(rand() % 20); // radius from 15 to 45 pixels
         float x = 80.0f + static_cast<float>(rand() % 620);
         float y = 50.0f + static_cast<float>(rand() % 400);
@@ -32,7 +46,7 @@ int main() {
 
         auto circle = std::make_unique<Circle>(radius);
         // make a unique pointer
-        bodies.push_back(std::make_unique<RigidBody>(x, y, mass, std::move(circle)));
+        bodies.push_back(std::make_unique<RigidBody>(x, y, mass, std::move(circle), color));
     }
 
     while (!WindowShouldClose()) { // runs while window is open
@@ -78,7 +92,7 @@ int main() {
                         static_cast<int>(body->getPositionX()),
                         static_cast<int>(body->getPositionY()),
                         static_cast<int>(circle->radius),
-                        RED
+                        body->getColor()
                     );
                 }   
             }

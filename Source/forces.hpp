@@ -91,11 +91,11 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
 
 // non-contact forces
 void update_noncollision(RigidBody& body) {
-    float fg = 600.0f * body.getMass();
+    float fg = 500.0f * body.getMass();
     body.add_forces({0.0f, fg});
 
     // wind
-    body.add_forces({200.0f, 0.0f});
+    //body.add_forces({200.0f, 0.0f});
 
     // air resistance
     // opposes the motion
