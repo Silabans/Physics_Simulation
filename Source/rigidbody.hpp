@@ -70,6 +70,7 @@ public:
     void setVelocityX(float new_vel) { velocity.x = new_vel; }
     void setVelocityY(float new_vel) { velocity.y = new_vel; }
     void setVelocity(Vector2D new_vel) { velocity = new_vel; }
+    void resetVelocity() { velocity = (Vector2D){0.0f, 0.0f}; }
 
     // Position Setters to fix wall sinking
     void setPositionX(float new_pos) { position.x = new_pos; }

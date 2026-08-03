@@ -30,6 +30,18 @@ std::unique_ptr<RigidBody> create_circle(float x, float y) {
     return std::make_unique<RigidBody>(x, y, mass, std::move(circle), color);
 } 
 
+
+void apply_mouse_spring_force(RigidBody& ball, Vector2D mouse_delta) {
+    const float stiffness = 7000.0f; // strength of spring
+    const float damping = 350.0f;
+
+    Vector2D spring_force = mouse_delta * stiffness;
+    Vector2D damping_force = ball.getVelocity() * -damping;
+
+    ball.add_forces(spring_force + damping_force);
+}
+
+
 int main() {
     const int screenWidth = 800;
     const int screenHeight = 600;
@@ -85,8 +97,18 @@ int main() {
                 body->integrate_pos(dt);
                 body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
 
+                Vector2D delta = mouse_pos - body->getPosition();
+                float dist = dot(delta, delta);
+                if (IsKeyDown(KEY_A)) {
+                    if (dist < squaring(150.0f)) {
+                        apply_mouse_spring_force(*body, delta);
+                    }
+                }
                 resolve_boundaries(*body);
             }
+
+
+        
 
             if (IsKeyPressed(KEY_SPACE)) {
                 bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
@@ -103,18 +125,6 @@ int main() {
         }
 
         // Key presses for user interaction
-
-        if (IsKeyDown(KEY_A)) {
-            for (auto& body : bodies) {
-                Vector2D delta = mouse_pos - body->getPosition();
-                float dist = dot(delta, delta);
-
-                if (dist < squaring(100.0f)) {
-                    Vector2D pull_force = delta * 2000.0f; // pull in the direction of the cursor
-                    body->add_forces(pull_force);
-                }
-            }
-        }
         if (IsKeyPressed(KEY_S)) {
             for (auto& body : bodies) {
                 Vector2D delta = mouse_pos - body->getPosition();
