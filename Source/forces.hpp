@@ -9,11 +9,11 @@ float squaring(float value) {
 }
 
 // Math operations
-inline Vector2D operator-(const Vector2D& a, const Vector2D& b) { return {a.x - b.x, a.y - b.y}; }
-inline Vector2D operator+(const Vector2D& a, const Vector2D& b) { return {a.x + b.x, a.y + b.y}; }
-inline Vector2D operator*(const Vector2D& a, const Vector2D& b) { return {a.x * b.x, a.y * b.y}; }
-inline Vector2D operator*(const Vector2D& a, const float scalar) { return {a.x * scalar, a.y * scalar}; }
-inline float dot(const Vector2D& a, const Vector2D& b) { return a.x * b.x + a.y * b.y; }
+Vector2D operator-(const Vector2D& a, const Vector2D& b) { return {a.x - b.x, a.y - b.y}; }
+Vector2D operator+(const Vector2D& a, const Vector2D& b) { return {a.x + b.x, a.y + b.y}; }
+Vector2D operator*(const Vector2D& a, const Vector2D& b) { return {a.x * b.x, a.y * b.y}; }
+Vector2D operator*(const Vector2D& a, const float scalar) { return {a.x * scalar, a.y * scalar}; }
+float dot(const Vector2D& a, const Vector2D& b) { return a.x * b.x + a.y * b.y; }
 
 
 Vector2D calculate_vrel(const RigidBody& a, const RigidBody& b) {

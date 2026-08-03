@@ -15,6 +15,21 @@ std::mt19937& random_engine() {
     return gen;
 }
 
+
+Color colors[7] = {RED, BLUE, YELLOW, GREEN, WHITE, PURPLE, ORANGE};
+
+std::unique_ptr<RigidBody> create_circle(float x, float y) {
+    std::uniform_int_distribution<std::size_t> distrib(0, 6);
+    Color color = colors[distrib(random_engine())];
+
+    float radius = 15.0f + static_cast<float>(rand() % 20); // radius from 15 to 45 pixels
+    float mass = radius*radius * 0.02f; // mass proportional to size
+
+    auto circle = std::make_unique<Circle>(radius);
+
+    return std::make_unique<RigidBody>(x, y, mass, std::move(circle), color);
+} 
+
 int main() {
     const int screenWidth = 800;
     const int screenHeight = 600;
@@ -29,24 +44,18 @@ int main() {
     double accumulator = 0.0;
     const double dt = 0.01;
 
+    const double spawn_frequency = 0.1f;
+    double spawn_threshold = spawn_frequency;
+
     // body initialisation using unique pointers (to store the objects in the heap rather
     // than the stack => more spacious)
     std::vector<std::unique_ptr<RigidBody>> bodies; 
 
     // create 10 randomly generated balls
-    Color colors[7] = {RED, BLUE, YELLOW, GREEN, WHITE, PURPLE, ORANGE};
-    for (int i = 0; i < 30; ++i) {
-        std::uniform_int_distribution<std::size_t> distrib(0, 6);
-        Color color = colors[distrib(random_engine())];
-
-        float radius = 12.0f + static_cast<float>(rand() % 16); // radius from 15 to 45 pixels
+    for (int i = 0; i < 5; ++i) {
         float x = 40.0f + static_cast<float>(rand() % 720);
         float y = 40.0f + static_cast<float>(rand() % 520);
-        float mass = radius*radius*radius * 0.002f; // mass proportional to size
-
-        auto circle = std::make_unique<Circle>(radius);
-        // make a unique pointer
-        bodies.push_back(std::make_unique<RigidBody>(x, y, mass, std::move(circle), color));
+        bodies.push_back(create_circle(x, y));
     }
 
     while (!WindowShouldClose()) { // runs while window is open
@@ -57,6 +66,9 @@ int main() {
         accumulator += frame_time;
 
         int impulseIterations = 4;
+
+        Vector2 raylib_mouse_pos = GetMousePosition();
+        Vector2D mouse_pos = { raylib_mouse_pos.x, raylib_mouse_pos.y };
 
         while (accumulator > dt) {
             // resolve 4 times to account for multibody collisions (more than 2 bodies colliding)
@@ -76,8 +88,52 @@ int main() {
                 resolve_boundaries(*body);
             }
 
+            if (IsKeyPressed(KEY_SPACE)) {
+                bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
+            } 
+            else if (IsKeyDown(KEY_SPACE)) {
+                if (spawn_threshold < 0.0f) {
+                    bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
+                    spawn_threshold = spawn_frequency;
+                }
+                else spawn_threshold -= dt;
+            } 
+
             accumulator -= dt;
         }
+
+        // Key presses for user interaction
+
+        if (IsKeyDown(KEY_A)) {
+            for (auto& body : bodies) {
+                Vector2D delta = mouse_pos - body->getPosition();
+                float dist = dot(delta, delta);
+
+                if (dist < squaring(100.0f)) {
+                    Vector2D pull_force = delta * 2000.0f; // pull in the direction of the cursor
+                    body->add_forces(pull_force);
+                }
+            }
+        }
+        if (IsKeyPressed(KEY_S)) {
+            for (auto& body : bodies) {
+                Vector2D delta = mouse_pos - body->getPosition();
+                float dist = dot(delta, delta);
+
+                if (dist < squaring(300.0f)) {
+                    Vector2D blast_force = delta * -10000.0f;
+                    body->add_forces(blast_force);
+                }
+            }
+        }
+        if (IsKeyDown(KEY_D)) {
+            for (auto& body : bodies) {
+                // reverses gravity 
+                Vector2D reversed_g = {0.0f, -2000.0f};
+                body->add_forces(reversed_g * body->getMass());
+            }
+        }
+
 
         // This part is for rendering
         BeginDrawing();
