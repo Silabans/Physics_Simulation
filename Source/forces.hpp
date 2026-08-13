@@ -1,28 +1,13 @@
 #pragma once
 #include "rigidbody.hpp"
 #include <algorithm>
-#include <cmath>
-
-
-float squaring(float value) { 
-    return value * value;
-}
-
-// Math operations
-Vector2D operator-(const Vector2D& a, const Vector2D& b) { return {a.x - b.x, a.y - b.y}; }
-Vector2D operator+(const Vector2D& a, const Vector2D& b) { return {a.x + b.x, a.y + b.y}; }
-Vector2D operator*(const Vector2D& a, const Vector2D& b) { return {a.x * b.x, a.y * b.y}; }
-Vector2D operator*(const Vector2D& a, const float scalar) { return {a.x * scalar, a.y * scalar}; }
-float dot(const Vector2D& a, const Vector2D& b) { return a.x * b.x + a.y * b.y; }
 
 
 Vector2D calculate_vrel(const RigidBody& a, const RigidBody& b) {
-    // Impulse
     Vector2D va = a.getVelocity();
     Vector2D vb = b.getVelocity();
-    Vector2D vrel = va - vb;
 
-    return vrel;
+    return va - vb;
 }
 
 
@@ -74,6 +59,25 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
     Vector2D correction = normal * (overlap / invMassSum) * percent; 
     a.setPosition(a.getPosition() + correction * a.getInverseMass()); // divide back by its mass
     b.setPosition(b.getPosition() - correction * b.getInverseMass());
+}
+
+
+void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
+    if (!sat.collision) return;
+
+    // Find the vertex p in the other box (deepest in the box -> lowest dot product value)
+    std::array<Vector2D, 4> verts_b;
+    Vector2D p = verts_b[0];
+    float min_overlap = dot(sat.normal, p);
+
+    for (int i = 1; i < 4; ++i) {
+        float overlap = dot(sat.normal, verts_b[i]);
+        if (overlap < min_overlap) {
+            min_overlap = overlap;
+        }
+    }
+
+    
 }
 
 

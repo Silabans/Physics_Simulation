@@ -50,18 +50,27 @@ int main() {
 
 
     // This acts as a time middleman, allowing physics calculation to happen with the precision
-    // of the time delta (dt) without having the frame rate to be as precise
+    // of the time delta (current_dt) without having the frame rate to be as precise
     // For example, in 0.20s, 20 physics updates happen but the frame may only update once or twice
     // by aggregating the final outcome of the 20 updates
     double accumulator = 0.0;
-    const double dt = 0.01;
+    const float dt = 0.01f;
+    float current_dt = dt;
 
-    const double spawn_frequency = 0.1f;
-    double spawn_threshold = spawn_frequency;
+    const float spawn_frequency = 0.1f;
+    float spawn_threshold = spawn_frequency;
 
     // body initialisation using unique pointers (to store the objects in the heap rather
     // than the stack => more spacious)
     std::vector<std::unique_ptr<RigidBody>> bodies; 
+
+
+    // static ball in the middle of the screen
+    auto pinballCircle = std::make_unique<Circle>(100.0f);
+    auto staticPinball = std::make_unique<RigidBody>(400.0f, 300.0f, 0.0f, std::move(pinballCircle), RAYWHITE);
+    staticPinball->setVelocity({0.0f, 0.0f});
+
+    bodies.push_back(std::move(staticPinball));
 
     // create 10 randomly generated balls
     for (int i = 0; i < 5; ++i) {
@@ -82,7 +91,8 @@ int main() {
         Vector2 raylib_mouse_pos = GetMousePosition();
         Vector2D mouse_pos = { raylib_mouse_pos.x, raylib_mouse_pos.y };
 
-        while (accumulator > dt) {
+
+        while (accumulator > current_dt) {
             // resolve 4 times to account for multibody collisions (more than 2 bodies colliding)
             for (int i = 0; i < impulseIterations; ++i) {
                 resolve_all_collisions(bodies);
@@ -93,20 +103,19 @@ int main() {
                 // pointer used because if passed by value, 
                 // a temp copy will be made and destroyed after the the function completes (local only)
                 update_noncollision(*body);
-                body->calculate_velocity(dt);
-                body->integrate_pos(dt);
+                body->calculate_velocity(current_dt);
+                body->integrate_pos(current_dt);
                 body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
 
                 Vector2D delta = mouse_pos - body->getPosition();
                 float dist = dot(delta, delta);
                 if (IsKeyDown(KEY_A)) {
-                    if (dist < squaring(150.0f)) {
+                    if (dist < squaring(120.0f)) {
                         apply_mouse_spring_force(*body, delta);
                     }
                 }
                 resolve_boundaries(*body);
             }
-
 
         
 
@@ -118,10 +127,10 @@ int main() {
                     bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
                     spawn_threshold = spawn_frequency;
                 }
-                else spawn_threshold -= dt;
+                else spawn_threshold -= current_dt;
             } 
 
-            accumulator -= dt;
+            accumulator -= current_dt;
         }
 
         // Key presses for user interaction
@@ -147,7 +156,8 @@ int main() {
 
         // This part is for rendering
         BeginDrawing();
-            ClearBackground(BLACK);
+            // ClearBackground(BLACK);
+            DrawRectangle(0, 0, 800, 600, Fade(BLACK, 0.6f)); // faded trails
 
             for (const auto& body : bodies) {
                 const Shape* shape = body->getShape(); // Shape, not ShapeType
@@ -160,7 +170,7 @@ int main() {
                         static_cast<int>(circle->radius),
                         body->getColor()
                     );
-                }   
+                }
             }
 
             DrawFPS(10, 10);
