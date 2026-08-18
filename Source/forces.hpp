@@ -79,6 +79,7 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
         float overlap = dot(sat.normal, verts_b[i]);
         if (overlap < min_overlap) {
             min_overlap = overlap;
+            p = verts_b[i];
         }
     }
 
@@ -106,10 +107,9 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
     // change in v_point = cross(r, w) -> done to find the actual change in velocity (not just rotation) of the point
     // This is because v = w x r
     float inverseMassSum = totalInverseMass + squaring(ra_cross_normal) * a.getInverseInertia() + squaring(rb_cross_normal) * b.getInverseInertia();
-    
 
     // Calculating impulse magnitude j
-    float e = 0.5f;
+    float e = 0.6f;
     float j = -(1.0 + e) * projected_speed / inverseMassSum;
     Vector2D impulse = sat.normal * j; // j in the direction of the normal
 
@@ -133,23 +133,21 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
 }
 
 
-void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies, SATresult sat) {
+void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     int count = bodies.size();
 
     for (int i = 0; i < count; ++i) {
         for (int j = i + 1; j < count; ++j) { // starts at i to skip the collisions between repeating pairs of bodies
-            const Shape shape1 = *bodies[i]->getShape();
-            const Shape shape2 = *bodies[j]->getShape();
+            RigidBody& a = *bodies[i];
+            RigidBody& b = *bodies[j];
 
-            if (shape1.type == ShapeType::CIRCLE && shape2.type == ShapeType::CIRCLE) {
+            if (a.getShape()->type == ShapeType::CIRCLE && b.getShape()->type == ShapeType::CIRCLE) {
                 resolve_circle_collision(*bodies[i], *bodies[j]);
             }
 
-            SATresult sat = check_box_collision(*bodies[i], *bodies[j]);
-            if (sat.collision == false) return;
-
-            if (shape1.type == ShapeType::BOX && shape2.type == ShapeType::BOX) {
-                resolve_box_collision(*bodies[i], *bodies[j], sat);
+            SATresult sat = check_box_collision(a, b);
+            if (a.getShape()->type == ShapeType::BOX && b.getShape()->type == ShapeType::BOX) {
+                resolve_box_collision(a, b, sat);
             }
 
             else {
@@ -179,11 +177,30 @@ void update_noncollision(RigidBody& body) {
 void resolve_boundaries(RigidBody& body) {
     // boundary collisions
     const Shape* shape = body.getShape();
-    float radius;
+    float halfW; float halfH;
 
     if (shape->type == ShapeType::CIRCLE) {
         const Circle* circle = static_cast<const Circle*>(shape);
-        radius = circle->radius;
+        halfW = halfH = circle->radius;
+    }
+    else if (shape->type == ShapeType::BOX) {
+        const Box* box = static_cast<const Box*>(shape);
+        
+        // find the extreme points along the x and y axes
+        std::array<Vector2D, 4> verts = box->get_vertices(body.getPosition());
+        float minX = verts[0].x; float maxX = verts[0].x;
+        float minY = verts[0].x; float maxY = verts[0].x;
+
+        for (int i = 1; i < 4; ++i) { // from the second to fourth vertex (the first is the default vertex)
+            minX = std::min(minX, verts[i].x);
+            minY = std::min(minY, verts[i].y);
+            maxX = std::max(maxX, verts[i].x);
+            maxY = std::max(maxY, verts[i].y);
+        }
+
+        // measure how far the furthest point is (along the x or y axis) from the centre of the box
+        halfH = maxY - body.getPositionY(); 
+        halfW = maxX - body.getPositionX();
     }
 
     float vx = body.getVelocityX();
@@ -195,29 +212,29 @@ void resolve_boundaries(RigidBody& body) {
     float restitution = 0.7f;
     float restThreshold = 50.0f;
 
-    if (x + radius > 800.0f) {
+    if (x + halfW > 800.0f) {
         if (std::abs(vx) < restThreshold) {
             body.setVelocityX(0.0f);
-            body.setPositionX(800.0f - radius);
+            body.setPositionX(800.0f - halfW);
         } else body.setVelocityX(-std::abs(vx) * restitution);
 
-    } else if (x - radius < 0.0f) {
+    } else if (x - halfW < 0.0f) {
         if (std::abs(vx) < restThreshold) {
             body.setVelocityX(0.0f);
-            body.setPositionX(radius);
+            body.setPositionX(halfW);
         } else body.setVelocityX(std::abs(vx) * restitution);
     }
 
-    if (y - radius < 0.0f) {
+    if (y - halfH < 0.0f) {
         if (std::abs(vy) < restThreshold) {
             body.setVelocityY(0.0f);
-            body.setPositionY(radius);
+            body.setPositionY(halfH);
         } else body.setVelocityY(std::abs(vy) * restitution);
 
-    } else if (y + radius > 600.0f) {
+    } else if (y + halfH > 600.0f) {
         if (std::abs(vy) < restThreshold) {
             body.setVelocityY(0.0f);
-            body.setPositionY(600.0f - radius);
+            body.setPositionY(600.0f - halfH);
         } else body.setVelocityY(-std::abs(vy) * restitution);
     }
 }

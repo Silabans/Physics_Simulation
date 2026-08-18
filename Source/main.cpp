@@ -23,12 +23,26 @@ std::unique_ptr<RigidBody> create_circle(float x, float y) {
     Color color = colors[distrib(random_engine())];
 
     float radius = 15.0f + static_cast<float>(rand() % 20); // radius from 15 to 45 pixels
-    float mass = radius*radius * 0.02f; // mass proportional to size
+    float mass = PI * (radius*radius) * 0.02f; // mass proportional to size
 
     auto circle = std::make_unique<Circle>(radius);
 
     return std::make_unique<RigidBody>(x, y, mass, std::move(circle), color);
-} 
+}
+
+
+std::unique_ptr<RigidBody> create_box(float x, float y) {
+    std::uniform_int_distribution<std::size_t> distrib(0, 6);
+    Color color = colors[distrib(random_engine())];
+
+    float side_len = 25.0f + static_cast<float>(rand() % 20);
+
+    float mass = (side_len*side_len) * 0.02f; // mass proportional to size
+
+    auto box = std::make_unique<Box>(side_len, side_len, 0.0f);
+
+    return std::make_unique<RigidBody>(x, y, mass, std::move(box), color);
+}
 
 
 void apply_mouse_spring_force(RigidBody& ball, Vector2D mouse_delta) {
@@ -70,13 +84,21 @@ int main() {
     auto staticPinball = std::make_unique<RigidBody>(400.0f, 300.0f, 0.0f, std::move(pinballCircle), RAYWHITE);
     staticPinball->setVelocity({0.0f, 0.0f});
 
-    bodies.push_back(std::move(staticPinball));
+    //bodies.push_back(std::move(staticPinball));
 
-    // create 10 randomly generated balls
+    // create randomly generated balls
     for (int i = 0; i < 5; ++i) {
         float x = 40.0f + static_cast<float>(rand() % 720);
         float y = 40.0f + static_cast<float>(rand() % 520);
-        bodies.push_back(create_circle(x, y));
+
+        //bodies.push_back(create_circle(x, y));
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        float x = 40.0f + static_cast<float>(rand() % 720);
+        float y = 40.0f + static_cast<float>(rand() % 520);
+        
+        bodies.push_back(create_box(x, y));
     }
 
     while (!WindowShouldClose()) { // runs while window is open
@@ -97,7 +119,7 @@ int main() {
             for (int i = 0; i < impulseIterations; ++i) {
                 // pointer used because if passed by value, 
                 // a temp copy will be made and destroyed after the the function completes (local only)
-                resolve_all_collisions(bodies, sat);
+                resolve_all_collisions(bodies);
             }
             for (auto& body : bodies) { // (*) -> pass in the pointer (not by value or reference)
                 Vector2D delta = mouse_pos - body->getPosition();
@@ -124,6 +146,17 @@ int main() {
             else if (IsKeyDown(KEY_SPACE)) {
                 if (spawn_threshold < 0.0f) {
                     bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
+                    spawn_threshold = spawn_frequency;
+                }
+                else spawn_threshold -= current_dt;
+            }
+
+            if (IsKeyPressed(KEY_B)) {
+                bodies.push_back(create_box(mouse_pos.x, mouse_pos.y));
+            } 
+            else if (IsKeyDown(KEY_B)) {
+                if (spawn_threshold < 0.0f) {
+                    bodies.push_back(create_box(mouse_pos.x, mouse_pos.y));
                     spawn_threshold = spawn_frequency;
                 }
                 else spawn_threshold -= current_dt;
@@ -170,10 +203,21 @@ int main() {
                         body->getColor()
                     );
                 }
+                else if (shape->type == ShapeType::BOX) {
+                    const Box* box = static_cast<const Box*>(shape); // convert shape to circle
 
+                    Rectangle values = { body->getPositionX(), body->getPositionY(), box->width, box->height};
+                    Vector2 origin = { box->halfExtents.x, box->halfExtents.y}; // centre of the box (point of rotation)
+                    float angleDegrees = box->angle *   (180.0f / PI); // raylib requires degrees
 
+                    DrawRectanglePro(
+                        values,
+                        origin,
+                        angleDegrees,
+                        body->getColor()
+                    );
+                }
             }
-
             DrawFPS(10, 10);
         EndDrawing();
     }
