@@ -95,18 +95,11 @@ int main() {
         while (accumulator > current_dt) {
             // resolve 4 times to account for multibody collisions (more than 2 bodies colliding)
             for (int i = 0; i < impulseIterations; ++i) {
-                resolve_all_collisions(bodies);
-            }
-
-            // updating velocity and position of each body
-            for (auto& body : bodies) { // (*) -> pass in the pointer (not by value or reference)
                 // pointer used because if passed by value, 
                 // a temp copy will be made and destroyed after the the function completes (local only)
-                update_noncollision(*body);
-                body->calculate_velocity(current_dt);
-                body->integrate_pos(current_dt);
-                body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
-
+                resolve_all_collisions(bodies, sat);
+            }
+            for (auto& body : bodies) { // (*) -> pass in the pointer (not by value or reference)
                 Vector2D delta = mouse_pos - body->getPosition();
                 float dist = dot(delta, delta);
                 if (IsKeyDown(KEY_A)) {
@@ -114,10 +107,16 @@ int main() {
                         apply_mouse_spring_force(*body, delta);
                     }
                 }
+
+                update_noncollision(*body);
+                // updating velocity and position of each body
+                body->calculate_velocity(current_dt);
+                body->integrate_pos(current_dt);
+                body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
                 resolve_boundaries(*body);
+
             }
 
-        
 
             if (IsKeyPressed(KEY_SPACE)) {
                 bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
@@ -171,6 +170,8 @@ int main() {
                         body->getColor()
                     );
                 }
+
+
             }
 
             DrawFPS(10, 10);

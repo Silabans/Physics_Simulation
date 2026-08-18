@@ -34,6 +34,7 @@ struct Shape {
     // -> virtual: to involve the subclass
     // -> ~Shape(): the ~ denotes a destructor of the superclass
     virtual ~Shape() = default;
+    virtual float compute_inertia(float mass) const = 0; // virtual -> only for inheritance
 };
 
 struct Circle : public Shape { // inheritance
@@ -42,15 +43,29 @@ struct Circle : public Shape { // inheritance
         : radius(r) { 
         type = ShapeType::CIRCLE; 
         }
+
+    // formula is stored in the shape subclasses, while the actual value will be calculated and stored in the rigidbody instance
+    float compute_inertia(float mass) const override {
+        return 0.5f * radius * mass * mass;
+    }
 };
 
 struct Box : public Shape { // inheritance
     Vector2D halfExtents; // for an upright box, these are the lines from the centre to the right side (u0) and centre to the top side (u1)
-
+    float width;
+    float height;
     float angle; // in radius, measured from the centre and with respect to the horizontal
+    
     Box(float w, float h, float angleRads)
-        : halfExtents{w * 0.5f, h * 0.5f}, angle(angleRads) { 
+        : halfExtents{w * 0.5f, h * 0.5f}, 
+        angle(angleRads),
+        width(w),
+        height(h) { 
         type = ShapeType::BOX; 
+    }
+
+    float compute_inertia(float mass) const override {
+        return mass * (width*width + height*height) / 12.0f;
     }
 
     std::array<Vector2D, 2> get_axes() const {
@@ -74,10 +89,6 @@ struct Box : public Shape { // inheritance
             centre + u0 + u1, // Top-right
             centre - u0 + u1  // Top-left
         };
-    }
-
-    float getAngularVel() {
-        
     }
 };
 
@@ -113,11 +124,14 @@ Projection find_max_min(const std::array<Vector2D, 4> verts, const Vector2D axis
 
 class RigidBody {
 private:
+    Vector2D totalForce;
     Vector2D position;
     Vector2D velocity;
-    Vector2D totalForce;
+    float angular_velocity;
     float inverseMass; 
     float mass;
+    float inertia;
+    float inverseInertia;
     std::unique_ptr<Shape> shape; // smart pointer => handles destruction automatically
     Color color;
     
@@ -128,11 +142,17 @@ public:
     RigidBody(float x, float y, float objectMass, std::unique_ptr<Shape> objectShape, Color objectColor)
         : position{x, y},
           velocity{0.0f, 0.0f},
+          angular_velocity(0.0f),
           totalForce{0.0f, 0.0f},
           mass(objectMass),
           inverseMass(objectMass > 0.0f ? 1.0f / objectMass : 0.0f),
           color(objectColor),
-          shape(std::move(objectShape)) {}
+          shape(std::move(objectShape)) 
+          {
+            // calculate within the square brackets because it requires more complex calculations and using calculated values (inertia for inverse inertia)
+            inertia = shape->compute_inertia(mass);
+            inverseInertia = inertia > 0.0f ? 1.0f / inertia : 0.0f;
+          }
         
     const Shape* getShape() const { return shape.get(); } // gets the actual instance using the pointer
 
@@ -144,8 +164,13 @@ public:
     const float getVelocityY() const { return velocity.y; }
     const Vector2D getVelocity() const { return velocity; }
 
+    const float getAngularVel() const { return angular_velocity; }
+
     const float getMass() const { return mass; }
     const float getInverseMass() const { return inverseMass; }
+
+    const float getInertia() const { return inertia; }
+    const float getInverseInertia() const { return inverseInertia; }
 
     const Color getColor() const { return color; }
 
@@ -153,6 +178,9 @@ public:
     void setVelocityY(float new_vel) { velocity.y = new_vel; }
     void setVelocity(Vector2D new_vel) { velocity = new_vel; }
     void resetVelocity() { velocity = (Vector2D){0.0f, 0.0f}; }
+
+    void setAngularVel(float new_ang_vel) { angular_velocity = new_ang_vel; }
+    void resetAngularVel() { angular_velocity = 0.0f; }
 
     // Position Setters to fix wall sinking
     void setPositionX(float new_pos) { position.x = new_pos; }
@@ -196,7 +224,7 @@ struct SATresult {
     // This means that the boxes are translated along the axis where the overlap the least
 };
 
-std::optional<SATresult> check_box_collision(const RigidBody& a, const RigidBody& b) {
+SATresult check_box_collision(const RigidBody& a, const RigidBody& b) {
     const Box* box_a = static_cast<const Box*>(a.getShape());
     const Box* box_b = static_cast<const Box*>(b.getShape());
 
@@ -216,7 +244,7 @@ std::optional<SATresult> check_box_collision(const RigidBody& a, const RigidBody
 
         if (!projection_a.check_overlap(projection_b)) {
             result.collision = false;
-            return std::nullopt;
+            return result;
         }
         
         float current_overlap = projection_a.get_overlap(projection_b);
