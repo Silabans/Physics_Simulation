@@ -46,13 +46,21 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
         float j = -(1.0f + e)*projectedVel / invMassSum; // magnitude of impulse
         Vector2D impulse = normal * j;
 
+        float restThreshold = 15.0f;
+
+        if (a.getVelocityY() < restThreshold) a.setVelocityY(0.0f);
+        if (a.getVelocityX() < restThreshold) a.setVelocityX(0.0f);
+        if (b.getVelocityX() < restThreshold) b.setVelocityX(0.0f);
+        if (b.getVelocityY() < restThreshold) b.setVelocityY(0.0f);
+
+
         a.setVelocity(va + impulse*a.getInverseMass());
         b.setVelocity(vb - impulse*b.getInverseMass());
     }
 
     // resolve overlapping circles
     float overlap = total_radius - dist;
-    float percent = 0.8f;
+    float percent = 0.7f;
 
     // inverse mass is included to ensure that the distance corrected is inversely 
     // proportional to mass (the larger ball is displaced by a smaller amount)
@@ -70,18 +78,29 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
     const Box* box_b = static_cast<const Box*>(b.getShape());
 
 
-    // Find the vertex p in the other box (deepest in the box -> lowest dot product value)
-    std::array<Vector2D, 4> verts_b = box_b->get_vertices(a.getPosition());
-    Vector2D p = verts_b[0];
+    // Find the vertex p of BOTH BOXES (deepest in the box -> lowest dot product value)
+    std::array<Vector2D, 4> verts_a = box_a->get_vertices(a.getPosition());
+    std::array<Vector2D, 4> verts_b = box_b->get_vertices(b.getPosition());
+
+    Vector2D p = verts_a[0];
     float min_overlap = dot(sat.normal, p);
 
     for (int i = 1; i < 4; ++i) {
-        float overlap = dot(sat.normal, verts_b[i]);
+        float overlap = dot(sat.normal, verts_a[i]);
+        if (overlap < min_overlap) {
+            min_overlap = overlap;
+            p = verts_a[i];
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        float overlap = dot(sat.normal * -1.0f, verts_b[i]); // negative to reverse the direction from BA to AB
         if (overlap < min_overlap) {
             min_overlap = overlap;
             p = verts_b[i];
         }
     }
+    
 
     // Lever from the centers of the bodies to point of contact (perpendicular distances between pivot/COG and point of contact)
     Vector2D ra = p - a.getPosition();
@@ -108,22 +127,34 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
     // This is because v = w x r
     float inverseMassSum = totalInverseMass + squaring(ra_cross_normal) * a.getInverseInertia() + squaring(rb_cross_normal) * b.getInverseInertia();
 
+    if (inverseMassSum <= 0.0001f) return; // prevents Zero Division Error
+
     // Calculating impulse magnitude j
-    float e = 0.6f;
+    float e = 0.2f;
     float j = -(1.0 + e) * projected_speed / inverseMassSum;
     Vector2D impulse = sat.normal * j; // j in the direction of the normal
 
     // updating velocity and angular velocity
     a.setVelocity(a.getVelocity() + impulse * a.getInverseMass());
-    a.setAngularVel(a.getAngularVel() + cross(ra, impulse) * a.getInverseMass());
+    a.setAngularVel(a.getAngularVel() + cross(ra, impulse) * a.getInverseInertia());
 
     b.setVelocity(b.getVelocity() - impulse * b.getInverseMass());
-    b.setAngularVel(b.getAngularVel() - cross(rb, impulse) * b.getInverseMass());
+    b.setAngularVel(b.getAngularVel() - cross(rb, impulse) * b.getInverseInertia());
 
-    float percentage_change = 0.6f;
+    float restThreshold = 4.0f;
+
+    if (a.getVelocityY() < restThreshold) a.setVelocityY(0.0f);
+    if (a.getVelocityX() < restThreshold) a.setVelocityX(0.0f);
+    if (b.getVelocityX() < restThreshold) b.setVelocityX(0.0f);
+    if (b.getVelocityY() < restThreshold) b.setVelocityY(0.0f);
+
+    float max_correction = 10.0f; // preventing weird teleportation
+    float corrected_depth = std::min(sat.overlap_depth, max_correction);
+
+    float percentage_change = 0.8f;
     if (totalInverseMass > 0.0f) {
         // large total mass and overlap depth -> larger correction, 
-        Vector2D correction = sat.normal * ((sat.overlap_depth / totalInverseMass) * percentage_change);
+        Vector2D correction = sat.normal * ((corrected_depth / totalInverseMass) * percentage_change);
 
         // the heavier object will be displaced less (more inertia)
         a.setPosition(a.getPosition() + correction * a.getInverseMass());
@@ -137,7 +168,7 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     int count = bodies.size();
 
     for (int i = 0; i < count; ++i) {
-        for (int j = i + 1; j < count; ++j) { // starts at i to skip the collisions between repeating pairs of bodies
+        for (int j = i; j < count; ++j) { // starts at i to skip the collisions between repeating pairs of bodies
             RigidBody& a = *bodies[i];
             RigidBody& b = *bodies[j];
 
@@ -145,8 +176,8 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
                 resolve_circle_collision(*bodies[i], *bodies[j]);
             }
 
-            SATresult sat = check_box_collision(a, b);
             if (a.getShape()->type == ShapeType::BOX && b.getShape()->type == ShapeType::BOX) {
+                SATresult sat = check_box_collision(a, b);
                 resolve_box_collision(a, b, sat);
             }
 
@@ -157,7 +188,6 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
         }
     }
 }
-
 
 // non-contact forces
 void update_noncollision(RigidBody& body) {
@@ -174,6 +204,8 @@ void update_noncollision(RigidBody& body) {
     //body.add_forces({fx, fy});
 }
 
+
+// no longer in use
 void resolve_boundaries(RigidBody& body) {
     // boundary collisions
     const Shape* shape = body.getShape();
@@ -189,7 +221,7 @@ void resolve_boundaries(RigidBody& body) {
         // find the extreme points along the x and y axes
         std::array<Vector2D, 4> verts = box->get_vertices(body.getPosition());
         float minX = verts[0].x; float maxX = verts[0].x;
-        float minY = verts[0].x; float maxY = verts[0].x;
+        float minY = verts[0].y; float maxY = verts[0].y;
 
         for (int i = 1; i < 4; ++i) { // from the second to fourth vertex (the first is the default vertex)
             minX = std::min(minX, verts[i].x);
@@ -202,6 +234,7 @@ void resolve_boundaries(RigidBody& body) {
         halfH = maxY - body.getPositionY(); 
         halfW = maxX - body.getPositionX();
     }
+
 
     float vx = body.getVelocityX();
     float vy = body.getVelocityY();
@@ -236,5 +269,9 @@ void resolve_boundaries(RigidBody& body) {
             body.setVelocityY(0.0f);
             body.setPositionY(600.0f - halfH);
         } else body.setVelocityY(-std::abs(vy) * restitution);
+
+        float surfaceFriction = 0.95f;
+        // angular vel decreases due to frictional forces
+        body.setAngularVel(body.getAngularVel() * surfaceFriction);
     }
 }

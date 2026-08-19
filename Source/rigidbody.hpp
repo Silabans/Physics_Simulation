@@ -127,6 +127,7 @@ private:
     Vector2D totalForce;
     Vector2D position;
     Vector2D velocity;
+    float angle;
     float angular_velocity;
     float inverseMass; 
     float mass;
@@ -142,6 +143,7 @@ public:
     RigidBody(float x, float y, float objectMass, std::unique_ptr<Shape> objectShape, Color objectColor)
         : position{x, y},
           velocity{0.0f, 0.0f},
+          angle(0.0f),
           angular_velocity(0.0f),
           totalForce{0.0f, 0.0f},
           mass(objectMass),
@@ -194,8 +196,25 @@ public:
     }
 
     void integrate_pos(float dt) {
+        if (inverseMass == 0.0f) return;
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;
+
+        angle += getAngularVel() * dt;
+
+        if (getAngularVel() > 0.02f) {
+            float angularDamping = 0.98f; // light damping caused by friction -> to cause eventual stop in rotations
+            setAngularVel(getAngularVel() * std::pow(angularDamping, dt * 60.0f));
+        }
+        else {
+            setAngularVel(0.0f);
+        }
+        
+
+        if (shape->type == ShapeType::BOX) {
+            static_cast<Box*>(shape.get())->angle = angle;
+            // get() fetches the actual object (not just the pointer)
+        }
     }
 
     void calculate_velocity(float dt) {
@@ -238,7 +257,7 @@ SATresult check_box_collision(const RigidBody& a, const RigidBody& b) {
     SATresult result;
     result.collision = true; // defaults to true if not separating axis is found
     
-    for ( Vector2D axis : test_axes) {
+    for (Vector2D axis : test_axes) {
         Projection projection_a = find_max_min(a_verts, axis);
         Projection projection_b = find_max_min(b_verts, axis);
 
@@ -258,8 +277,11 @@ SATresult check_box_collision(const RigidBody& a, const RigidBody& b) {
     // Hence, A will always move away from B (instead of moving closer to B, which may occur
     // if the normal points from A to B) because the normal dictates the direction of the impulse and separation
     Vector2D centreDist = a.getPosition() - b.getPosition();
-    if (dot(centreDist, result.normal) < 0.0f) {
-        result.normal = result.normal * -1.0f;
+
+    if (dot(centreDist, centreDist) > 0.00001f) { // false if the boxes share the same centre
+        if (dot(centreDist, result.normal) < 0.0f) {
+            result.normal = result.normal * -1.0f;
+        }
     }
 
     return result;

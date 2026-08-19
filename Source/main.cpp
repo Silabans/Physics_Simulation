@@ -35,7 +35,7 @@ std::unique_ptr<RigidBody> create_box(float x, float y) {
     std::uniform_int_distribution<std::size_t> distrib(0, 6);
     Color color = colors[distrib(random_engine())];
 
-    float side_len = 25.0f + static_cast<float>(rand() % 20);
+    float side_len = 30.0f + static_cast<float>(rand() % 30);
 
     float mass = (side_len*side_len) * 0.02f; // mass proportional to size
 
@@ -45,14 +45,14 @@ std::unique_ptr<RigidBody> create_box(float x, float y) {
 }
 
 
-void apply_mouse_spring_force(RigidBody& ball, Vector2D mouse_delta) {
-    const float stiffness = 7000.0f; // strength of spring
+void apply_mouse_spring_force(RigidBody& body, Vector2D mouse_delta) {
+    const float stiffness = 30000.0f; // strength of spring
     const float damping = 350.0f;
 
     Vector2D spring_force = mouse_delta * stiffness;
-    Vector2D damping_force = ball.getVelocity() * -damping;
+    Vector2D damping_force = body.getVelocity() * -damping;
 
-    ball.add_forces(spring_force + damping_force);
+    body.add_forces(spring_force + damping_force);
 }
 
 
@@ -64,12 +64,11 @@ int main() {
 
 
     // This acts as a time middleman, allowing physics calculation to happen with the precision
-    // of the time delta (current_dt) without having the frame rate to be as precise
+    // of the time delta (dt) without having the frame rate to be as precise
     // For example, in 0.20s, 20 physics updates happen but the frame may only update once or twice
     // by aggregating the final outcome of the 20 updates
     double accumulator = 0.0;
     const float dt = 0.01f;
-    float current_dt = dt;
 
     const float spawn_frequency = 0.1f;
     float spawn_threshold = spawn_frequency;
@@ -101,6 +100,21 @@ int main() {
         bodies.push_back(create_box(x, y));
     }
 
+    // initialise walls as rigid bodies
+    float thickness = 40.0f;
+    auto leftWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
+    auto rightWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
+    auto topWall = std::make_unique<Box>((float)screenWidth, thickness, 0.0f);
+    auto bottomWall = std::make_unique<Box>((float)screenWidth, thickness, 0.0f);
+    Color wallColor = ORANGE;
+
+    // vertical walls
+    bodies.push_back(std::make_unique<RigidBody>(0.0f, screenHeight * 0.5f, 0.0f, std::move(leftWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth, screenHeight * 0.5f, 0.0f, std::move(rightWall), wallColor));
+    // horizontal walls
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, 0.0f, 0.0f, std::move(topWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, screenHeight, 0.0f, std::move(bottomWall), wallColor));  
+
     while (!WindowShouldClose()) { // runs while window is open
         double frame_time = GetFrameTime(); // delta time in seconds
         if (frame_time > 0.20) {
@@ -114,7 +128,7 @@ int main() {
         Vector2D mouse_pos = { raylib_mouse_pos.x, raylib_mouse_pos.y };
 
 
-        while (accumulator > current_dt) {
+        while (accumulator > dt) {
             // resolve 4 times to account for multibody collisions (more than 2 bodies colliding)
             for (int i = 0; i < impulseIterations; ++i) {
                 // pointer used because if passed by value, 
@@ -132,10 +146,9 @@ int main() {
 
                 update_noncollision(*body);
                 // updating velocity and position of each body
-                body->calculate_velocity(current_dt);
-                body->integrate_pos(current_dt);
+                body->calculate_velocity(dt);
+                body->integrate_pos(dt);
                 body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
-                resolve_boundaries(*body);
 
             }
 
@@ -148,7 +161,7 @@ int main() {
                     bodies.push_back(create_circle(mouse_pos.x, mouse_pos.y));
                     spawn_threshold = spawn_frequency;
                 }
-                else spawn_threshold -= current_dt;
+                else spawn_threshold -= dt;
             }
 
             if (IsKeyPressed(KEY_B)) {
@@ -159,10 +172,10 @@ int main() {
                     bodies.push_back(create_box(mouse_pos.x, mouse_pos.y));
                     spawn_threshold = spawn_frequency;
                 }
-                else spawn_threshold -= current_dt;
+                else spawn_threshold -= dt;
             } 
 
-            accumulator -= current_dt;
+            accumulator -= dt;
         }
 
         // Key presses for user interaction
@@ -172,7 +185,7 @@ int main() {
                 float dist = dot(delta, delta);
 
                 if (dist < squaring(300.0f)) {
-                    Vector2D blast_force = delta * -10000.0f;
+                    Vector2D blast_force = delta * -80000.0f;
                     body->add_forces(blast_force);
                 }
             }
@@ -189,7 +202,7 @@ int main() {
         // This part is for rendering
         BeginDrawing();
             // ClearBackground(BLACK);
-            DrawRectangle(0, 0, 800, 600, Fade(BLACK, 0.6f)); // faded trails
+            DrawRectangle(0, 0, 800, 600, Fade(BLACK, 0.85f)); // faded trails
 
             for (const auto& body : bodies) {
                 const Shape* shape = body->getShape(); // Shape, not ShapeType
