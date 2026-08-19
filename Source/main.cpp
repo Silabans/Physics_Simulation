@@ -122,7 +122,7 @@ int main() {
         }
         accumulator += frame_time;
 
-        int impulseIterations = 4;
+        int impulseIterations = 10;
 
         Vector2 raylib_mouse_pos = GetMousePosition();
         Vector2D mouse_pos = { raylib_mouse_pos.x, raylib_mouse_pos.y };
