@@ -199,11 +199,23 @@ public:
         if (inverseMass == 0.0f) return;
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;
-
         angle += getAngularVel() * dt;
 
-        if (getAngularVel() > 0.02f) {
-            float angularDamping = 0.98f; // light damping caused by friction -> to cause eventual stop in rotations
+        float restThreshold = 5.0f;
+        float linearDamping = 0.99;
+        if (std::abs(getVelocityX()) > restThreshold) {
+            setVelocityX(getVelocityX() * std::pow(linearDamping, dt * 60.0f));
+        } else {
+            setVelocityX(0.0f);
+        }
+        if (std::abs(getVelocityY()) > restThreshold) {
+            setVelocityY(getVelocityY() * std::pow(linearDamping, dt * 60.0f));
+        } else {
+            setVelocityY(0.0f);
+        }
+
+        if (std::abs(getAngularVel()) > 0.1f) {
+            float angularDamping = 0.99f; // light damping caused by friction -> to cause eventual stop in rotations
             setAngularVel(getAngularVel() * std::pow(angularDamping, dt * 60.0f));
         }
         else {

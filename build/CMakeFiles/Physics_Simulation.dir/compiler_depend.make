@@ -236,7 +236,9 @@ CMakeFiles/Physics_Simulation.dir/Source/main.cpp.obj: C:/Users/USER/Documents/C
   C:/Users/USER/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
   C:/Users/USER/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/xmmintrin.h \
   C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/forces.hpp \
-  C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/rigidbody.hpp
+  C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/rendering.hpp \
+  C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/rigidbody.hpp \
+  C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/tools.hpp
 
 
 C:/Users/USER/mingw64/include/_timeval.h:
@@ -710,3 +712,7 @@ C:/Users/USER/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h:
 C:/Users/USER/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/xmmintrin.h:
 
 C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/forces.hpp:
+
+C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/rendering.hpp:
+
+C:/Users/USER/Documents/Coding\ Projects/Self-initiated/C++/Physics_Simulation/Source/tools.hpp:

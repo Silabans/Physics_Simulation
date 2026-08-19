@@ -48,7 +48,6 @@ void resolve_circle_collision(RigidBody& a, RigidBody& b) {
 
         float restThreshold = 15.0f;
 
-        if (a.getVelocityY() < restThreshold) a.setVelocityY(0.0f);
         if (a.getVelocityX() < restThreshold) a.setVelocityX(0.0f);
         if (b.getVelocityX() < restThreshold) b.setVelocityX(0.0f);
         if (b.getVelocityY() < restThreshold) b.setVelocityY(0.0f);
@@ -130,7 +129,7 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
     if (inverseMassSum <= 0.0001f) return; // prevents Zero Division Error
 
     // Calculating impulse magnitude j
-    float e = 0.2f;
+    float e = 0.5f;
     float j = -(1.0 + e) * projected_speed / inverseMassSum;
     Vector2D impulse = sat.normal * j; // j in the direction of the normal
 
@@ -143,7 +142,6 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
 
     float restThreshold = 4.0f;
 
-    if (a.getVelocityY() < restThreshold) a.setVelocityY(0.0f);
     if (a.getVelocityX() < restThreshold) a.setVelocityX(0.0f);
     if (b.getVelocityX() < restThreshold) b.setVelocityX(0.0f);
     if (b.getVelocityY() < restThreshold) b.setVelocityY(0.0f);
@@ -168,7 +166,7 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     int count = bodies.size();
 
     for (int i = 0; i < count; ++i) {
-        for (int j = i; j < count; ++j) { // starts at i to skip the collisions between repeating pairs of bodies
+        for (int j = i + 1; j < count; ++j) { // starts at i to skip the collisions between repeating pairs of bodies
             RigidBody& a = *bodies[i];
             RigidBody& b = *bodies[j];
 
