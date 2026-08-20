@@ -4,8 +4,9 @@
 int main() {
     const int screenWidth = 800;
     const int screenHeight = 600;
+    const int FPS = 120;
     InitWindow(screenWidth, screenHeight, "2D Physics Engine");
-    SetTargetFPS(60);
+    SetTargetFPS(FPS);
 
 
     // This acts as a time middleman, allowing physics calculation to happen with the precision
@@ -34,7 +35,7 @@ int main() {
 
         while (accumulator > dt) {
             userInteraction(bodies, dt);
-            physicsResolution(bodies, dt, impulseIterations);
+            physicsResolution(bodies, dt, FPS, impulseIterations);
             accumulator -= dt;
         }
 

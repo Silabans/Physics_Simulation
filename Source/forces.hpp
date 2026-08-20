@@ -162,6 +162,11 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
 }
 
 
+void resolve_box_circle_collision(RigidBody& a, RigidBody& b) {
+    return;
+}
+
+
 void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     int count = bodies.size();
 
@@ -179,8 +184,12 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
                 resolve_box_collision(a, b, sat);
             }
 
+            if (a.getShape()->type == ShapeType::BOX && b.getShape()->type == ShapeType::CIRCLE) {
+                resolve_box_circle_collision(a, b);
+            }
+
             else {
-                // implement box-to-circle collisions
+                // implement other types of collisions
             }
             
         }
@@ -189,6 +198,8 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
 
 // non-contact forces
 void update_noncollision(RigidBody& body) {
+    if (body.getInverseMass() == 0.0f) return;
+
     float fg = 900.0f * body.getMass();
     body.add_forces({0.0f, fg});
 
@@ -205,6 +216,8 @@ void update_noncollision(RigidBody& body) {
 
 // no longer in use
 void resolve_boundaries(RigidBody& body) {
+    if (body.getInverseMass() == 0.0f) return;
+
     // boundary collisions
     const Shape* shape = body.getShape();
     float halfW; float halfH;

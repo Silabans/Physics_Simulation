@@ -195,8 +195,11 @@ public:
         velocity.y += impulse.y * inverseMass;
     }
 
-    void integrate_pos(float dt) {
+    void integrate_pos(float dt, int FPS) {
         if (inverseMass == 0.0f) return;
+
+        float floatFPS = static_cast<float>(FPS);
+
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;
         angle += getAngularVel() * dt;
@@ -204,19 +207,19 @@ public:
         float restThreshold = 5.0f;
         float linearDamping = 0.99;
         if (std::abs(getVelocityX()) > restThreshold) {
-            setVelocityX(getVelocityX() * std::pow(linearDamping, dt * 60.0f));
+            setVelocityX(getVelocityX() * std::pow(linearDamping, dt * floatFPS));
         } else {
             setVelocityX(0.0f);
         }
         if (std::abs(getVelocityY()) > restThreshold) {
-            setVelocityY(getVelocityY() * std::pow(linearDamping, dt * 60.0f));
+            setVelocityY(getVelocityY() * std::pow(linearDamping, dt * floatFPS));
         } else {
             setVelocityY(0.0f);
         }
 
         if (std::abs(getAngularVel()) > 0.1f) {
-            float angularDamping = 0.99f; // light damping caused by friction -> to cause eventual stop in rotations
-            setAngularVel(getAngularVel() * std::pow(angularDamping, dt * 60.0f));
+            float angularDamping = 0.98f; // light damping caused by friction -> to cause eventual stop in rotations
+            setAngularVel(getAngularVel() * std::pow(angularDamping, dt * floatFPS));
         }
         else {
             setAngularVel(0.0f);

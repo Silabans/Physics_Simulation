@@ -47,8 +47,8 @@ std::unique_ptr<RigidBody> create_box(float x, float y) {
 
 
 void apply_mouse_spring_force(RigidBody& body, Vector2D mouse_delta) {
-    const float stiffness = 30000.0f; // strength of spring
-    const float damping = 350.0f;
+    const float stiffness = 40000.0f; // strength of spring
+    const float damping = 300.0f;
 
     Vector2D spring_force = mouse_delta * stiffness;
     Vector2D damping_force = body.getVelocity() * -damping;
@@ -94,7 +94,7 @@ void userInteraction(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt) 
 
         if (IsKeyPressed(KEY_S)) {
             if (dist < squaring(300.0f)) {
-                Vector2D blast_force = delta * -80000.0f;
+                Vector2D blast_force = delta * -70000.0f;
                 body->add_forces(blast_force);
             }
         }
@@ -106,7 +106,7 @@ void userInteraction(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt) 
         }
 
         if (IsKeyDown(KEY_A)) {
-            if (dist < squaring(100.0f)) {
+            if (dist < squaring(60.0f)) {
                 apply_mouse_spring_force(*body, delta);
             }
         }
@@ -114,7 +114,7 @@ void userInteraction(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt) 
 }
 
 
-void physicsResolution(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt, int impulseIterations) {
+void physicsResolution(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt, int FPS, int impulseIterations) {
     // resolve 10 times to account for smooth multibody collisions (more than 2 bodies colliding)
     for (int i = 0; i < impulseIterations; ++i) {
         // pointer used because if passed by value, 
@@ -125,26 +125,27 @@ void physicsResolution(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt
         update_noncollision(*body);
         // updating velocity and position of each body
         body->calculate_velocity(dt);
-        body->integrate_pos(dt);
+        body->integrate_pos(dt, FPS);
         body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
+        resolve_boundaries(*body);
     }
 }
 
 // initialise walls as rigid bodies
 void initialiseWalls(std::vector<std::unique_ptr<RigidBody>>& bodies, int screenHeight, int screenWidth) {
-    float thickness = 40.0f;
+    float thickness = 80.0f;
     auto leftWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
     auto rightWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
-    auto topWall = std::make_unique<Box>((float)screenWidth, thickness, 0.0f);
-    auto bottomWall = std::make_unique<Box>((float)screenWidth, thickness, 0.0f);
-    Color wallColor = ORANGE;
+    auto topWall = std::make_unique<Box>((float)screenWidth + thickness * 2.0f, thickness, 0.0f);
+    auto bottomWall = std::make_unique<Box>((float)screenWidth + thickness * 2.0f, thickness, 0.0f);
+    Color wallColor = DARKGRAY;
 
     // vertical walls
-    bodies.push_back(std::make_unique<RigidBody>(0.0f, screenHeight * 0.5f, 0.0f, std::move(leftWall), wallColor));
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth, screenHeight * 0.5f, 0.0f, std::move(rightWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(-thickness * 0.5f, screenHeight * 0.5f, 0.0f, std::move(leftWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth + thickness * 0.5f, screenHeight * 0.5f, 0.0f, std::move(rightWall), wallColor));
     // horizontal walls
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, 0.0f, 0.0f, std::move(topWall), wallColor));
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, screenHeight, 0.0f, std::move(bottomWall), wallColor));  
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, -thickness * 0.5f, 0.0f, std::move(topWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, screenHeight + thickness * 0.5f, 0.0f, std::move(bottomWall), wallColor));  
 }
 
 // body initialisations

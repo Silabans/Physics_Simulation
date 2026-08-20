@@ -5,7 +5,7 @@
 void render(std::vector<std::unique_ptr<RigidBody>>& bodies) {
     BeginDrawing();
         // ClearBackground(BLACK);
-        DrawRectangle(0, 0, 800, 600, Fade(BLACK, 0.85f)); // faded trails
+        DrawRectangle(0, 0, 800, 600, Fade(BLACK, 0.75f)); // faded trails
 
         for (const auto& body : bodies) {
             const Shape* shape = body->getShape(); // Shape, not ShapeType
@@ -24,7 +24,7 @@ void render(std::vector<std::unique_ptr<RigidBody>>& bodies) {
 
                 Rectangle values = { body->getPositionX(), body->getPositionY(), box->width, box->height};
                 Vector2 origin = { box->halfExtents.x, box->halfExtents.y}; // centre of the box (point of rotation)
-                float angleDegrees = box->angle *   (180.0f / PI); // raylib requires degrees
+                float angleDegrees = box->angle * (180.0f / PI); // raylib requires degrees
 
                 DrawRectanglePro(
                     values,
