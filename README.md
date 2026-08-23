@@ -9,3 +9,6 @@ A program that simulates rigid body interactions due to mechanical physics
 ## Problems that are in Work-in-Progress
 * SAT box collisions (impulse resolution)
 * Rotational box physics
+
+### Matrix Angle Transformation (Unrotation)
+![alt text](<Screenshot 2026-08-23 153058.png>)

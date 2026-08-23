@@ -12,8 +12,6 @@ Vector2D calculate_vrel(const RigidBody& a, const RigidBody& b) {
 
 
 void resolve_circle_collision(RigidBody& a, RigidBody& b) {
-    if (a.getShape()->type != ShapeType::CIRCLE || b.getShape()->type != ShapeType::CIRCLE) return;
-
     const Circle* circleA = static_cast<const Circle*>(a.getShape());
     const Circle* circleB = static_cast<const Circle*>(b.getShape());
 
@@ -163,7 +161,69 @@ void resolve_box_collision(RigidBody& a, RigidBody& b, SATresult sat) {
 
 
 void resolve_box_circle_collision(RigidBody& a, RigidBody& b) {
-    return;
+    const Box* box = static_cast<const Box*>(a.getShape());
+    const Circle* circle = static_cast<const Circle*>(b.getShape());
+
+    // we need to transform into the box local space/xy graph (from the world space)
+    // => This is to ensure that the relative position between the box and the circle when the box is "unrotated" to be made upright
+    // why do we need the box to be upright? It is so that we can use halfExtents x and y to gauge whether the circle is overlapping
+    // with the box or not, and to find the point where the circle and box are overlapping
+
+    Vector2D d_world = b.getPosition() - a.getPosition();
+    // Vector AB => first step: translation (taking the centre of the box A as the local origin)
+
+    std::array<Vector2D, 2> axes = box->get_axes();
+    float localX = dot(d_world, axes[0]);
+    float localY = dot(d_world, axes[1]);
+    //2nd step: x_local = dx*cos(t) + dysin(t) || y_local = -dx*sin(t) + dy*cos(t)
+
+    Vector2D halfExtents = box->halfExtents;
+
+    // if the bodies aren't colliding, skip
+    if (std::abs(localX) > halfExtents.x + circle->radius && std::abs(localY) > halfExtents.y + circle->radius) return;
+
+    // Let p be the point of contact between the two bodies
+    // if the localX is within the horizontal length of the box, the contact is on a horizontal surface
+    // if localX lies beyond, the contact is on a corner (which is halfExtent.x distance away from the box's centre)
+    float px = std::clamp(localX, -halfExtents.x, halfExtents.x);
+    float py = std::clamp(localY, -halfExtents.y, halfExtents.y);
+    
+
+    // transforming these coordinates back to the world space
+    float angle = box->angle;
+    float x = px*std::cos(angle) - py*std::sin(angle);
+    float y = px*std::sin(angle) + py*std::cos(angle);
+
+    Vector2D world_p = (Vector2D){x, y} + a.getPosition();
+    Vector2D delta = b.getPosition() - world_p; // contact point to circle centre (PC)
+
+    float squaredist = dot(delta, delta);
+    float dist = std::sqrt(squaredist);
+    float inversedist = 1.0f / dist;
+
+    Vector2D normal = delta*inversedist;
+
+    Vector2D local_contact = a.getPosition() - world_p; // vector from box centre to contact point
+    Vector2D vrel = b.getVelocity() - (a.getVelocity() + cross(local_contact, a.getAngularVel()));
+    float projected_speed = dot(vrel, normal);
+
+    float normal_cross_product = cross(local_contact, normal);
+    float rotational_inertia_a = a.getInverseInertia() * squaring(normal_cross_product);
+    float inverseMassSum = b.getInverseMass() + a.getInverseMass() + rotational_inertia_a;
+
+    // calculating impulse
+    float e = 0.6;
+    float j = -(1 + e) * projected_speed / inverseMassSum;
+    Vector2D impulse = normal * j; // gives direction (along the normal)
+
+    a.setVelocity(a.getVelocity() - impulse * a.getInverseMass());
+    a.setAngularVel(a.getAngularVel() - cross(local_contact, impulse) * a.getInverseInertia());
+
+    b.setVelocity(b.getVelocity() + impulse * b.getInverseMass());
+
+    // spatial/overlap correction
+    float overlap = std::sqrt() + ra
+
 }
 
 
