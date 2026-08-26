@@ -207,10 +207,12 @@ void resolve_box_circle_collision(RigidBody& a, RigidBody& b) {
 
 
     Vector2D local_contact = world_p - a.getPosition(); // vector from box centre to contact point
-    Vector2D vrel = (a.getVelocity() + cross(local_contact, a.getAngularVel())) - b.getVelocity(); // a taken as positive
+    Vector2D va = a.getVelocity() + cross(local_contact, a.getAngularVel());
+    Vector2D vb = b.getVelocity();
+    Vector2D vrel = vb - va; 
     float projected_speed = dot(vrel, normal);
 
-    if (projected_speed <= 0.0f) return; // already moving apart
+    if (projected_speed >= 0.0f) return; // already moving apart
 
     float normal_cross_product = cross(local_contact, normal);
     float rotational_inertia_a = a.getInverseInertia() * squaring(normal_cross_product);

@@ -25,6 +25,7 @@ int main() {
     initialiseWalls(bodies, screenHeight, screenWidth);
     initialiseCircles(bodies);
     initialiseBoxes(bodies);
+    initialiseUnmovable(bodies);
 
     while (!WindowShouldClose()) { // runs while window is open
         double frame_time = GetFrameTime(); // delta time in seconds
