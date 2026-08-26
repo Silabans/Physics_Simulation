@@ -127,13 +127,13 @@ void physicsResolution(std::vector<std::unique_ptr<RigidBody>>& bodies, float dt
         body->calculate_velocity(dt);
         body->integrate_pos(dt, FPS);
         body->reset_forces(); // reset forces after integrating (to avoid the same force accumulating)
-        resolve_boundaries(*body);
+        //resolve_boundaries(*body);
     }
 }
 
 // initialise walls as rigid bodies
 void initialiseWalls(std::vector<std::unique_ptr<RigidBody>>& bodies, int screenHeight, int screenWidth) {
-    float thickness = 80.0f;
+    float thickness = 100.0f;
     auto leftWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
     auto rightWall = std::make_unique<Box>(thickness, (float)screenHeight, 0.0f);
     auto topWall = std::make_unique<Box>((float)screenWidth + thickness * 2.0f, thickness, 0.0f);
@@ -141,11 +141,11 @@ void initialiseWalls(std::vector<std::unique_ptr<RigidBody>>& bodies, int screen
     Color wallColor = DARKGRAY;
 
     // vertical walls
-    bodies.push_back(std::make_unique<RigidBody>(-thickness * 0.5f, screenHeight * 0.5f, 0.0f, std::move(leftWall), wallColor));
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth + thickness * 0.5f, screenHeight * 0.5f, 0.0f, std::move(rightWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(-thickness * 0.4f, screenHeight * 0.5f, 0.0f, std::move(leftWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth + thickness * 0.4f, screenHeight * 0.5f, 0.0f, std::move(rightWall), wallColor));
     // horizontal walls
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, -thickness * 0.5f, 0.0f, std::move(topWall), wallColor));
-    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, screenHeight + thickness * 0.5f, 0.0f, std::move(bottomWall), wallColor));  
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, -thickness * 0.4f, 0.0f, std::move(topWall), wallColor));
+    bodies.push_back(std::make_unique<RigidBody>(screenWidth * 0.5f, screenHeight + thickness * 0.4f, 0.0f, std::move(bottomWall), wallColor));  
 }
 
 // body initialisations

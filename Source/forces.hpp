@@ -179,37 +179,44 @@ void resolve_box_circle_collision(RigidBody& a, RigidBody& b) {
 
     Vector2D halfExtents = box->halfExtents;
 
-    // if the bodies aren't colliding, skip
-    if (std::abs(localX) > halfExtents.x + circle->radius && std::abs(localY) > halfExtents.y + circle->radius) return;
-
     // Let p be the point of contact between the two bodies
     // if the localX is within the horizontal length of the box, the contact is on a horizontal surface
     // if localX lies beyond, the contact is on a corner (which is halfExtent.x distance away from the box's centre)
     float px = std::clamp(localX, -halfExtents.x, halfExtents.x);
     float py = std::clamp(localY, -halfExtents.y, halfExtents.y);
+
+    // if the bodies aren't colliding, skip
+    float dx = localX - px; // x distance from contact point to circle's centre
+    float dy = localY - py;
+    if (dy*dy + dx*dx > squaring(circle->radius)) return;
     
-
     // transforming these coordinates back to the world space
-    float angle = box->angle;
-    float x = px*std::cos(angle) - py*std::sin(angle);
-    float y = px*std::sin(angle) + py*std::cos(angle);
-
-    Vector2D world_p = (Vector2D){x, y} + a.getPosition();
-    Vector2D delta = b.getPosition() - world_p; // contact point to circle centre (PC)
+    Vector2D world_p = a.getPosition() + axes[0]*px + axes[1]*py;
+    Vector2D delta = b.getPosition() - world_p;
 
     float squaredist = dot(delta, delta);
-    float dist = std::sqrt(squaredist);
-    float inversedist = 1.0f / dist;
+    float dist = std::sqrt(squaredist); // distance from circle centre to point of contact
 
-    Vector2D normal = delta*inversedist;
+    Vector2D normal;
+    if (dist > 0.0001f) {
+        normal = delta*(1.0f / dist);
+    } else {
+        normal = axes[1]; // axis to default to when circle centre penetrates deep (near box's centre)
+        dist = 0.0001f;
+    }
 
-    Vector2D local_contact = a.getPosition() - world_p; // vector from box centre to contact point
-    Vector2D vrel = b.getVelocity() - (a.getVelocity() + cross(local_contact, a.getAngularVel()));
+
+    Vector2D local_contact = world_p - a.getPosition(); // vector from box centre to contact point
+    Vector2D vrel = (a.getVelocity() + cross(local_contact, a.getAngularVel())) - b.getVelocity(); // a taken as positive
     float projected_speed = dot(vrel, normal);
+
+    if (projected_speed <= 0.0f) return; // already moving apart
 
     float normal_cross_product = cross(local_contact, normal);
     float rotational_inertia_a = a.getInverseInertia() * squaring(normal_cross_product);
     float inverseMassSum = b.getInverseMass() + a.getInverseMass() + rotational_inertia_a;
+
+    if (inverseMassSum <= 0.0001f) return; // two static objects
 
     // calculating impulse
     float e = 0.6;
@@ -222,8 +229,19 @@ void resolve_box_circle_collision(RigidBody& a, RigidBody& b) {
     b.setVelocity(b.getVelocity() + impulse * b.getInverseMass());
 
     // spatial/overlap correction
-    float overlap = std::sqrt() + ra
+    float penetration = circle->radius - dist;
+    float percentage_change = 0.7f;
+    Vector2D correction;
+    float totalInverseMass = a.getInverseMass() + b.getInverseMass();
 
+    if (penetration > 0.0f && totalInverseMass > 0.0f) {
+        // large total mass and overlap depth -> larger correction, 
+        correction = normal * ((penetration / totalInverseMass) * percentage_change);
+
+        // the heavier object will be displaced less (more inertia)
+        a.setPosition(a.getPosition() - correction * a.getInverseMass()); // a moves in +ve direction -> correction is in the opposite (-ve) direction
+        b.setPosition(b.getPosition() + correction * b.getInverseMass());
+    }
 }
 
 
@@ -246,6 +264,10 @@ void resolve_all_collisions(std::vector<std::unique_ptr<RigidBody>>& bodies) {
 
             if (a.getShape()->type == ShapeType::BOX && b.getShape()->type == ShapeType::CIRCLE) {
                 resolve_box_circle_collision(a, b);
+            }
+
+            else if (a.getShape()->type == ShapeType::CIRCLE && b.getShape()->type == ShapeType::BOX) {
+                resolve_box_circle_collision(b, a); // flip the positions of the arguments
             }
 
             else {
