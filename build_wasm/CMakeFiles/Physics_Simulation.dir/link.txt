@@ -1,0 +1,1 @@
+C:\Users\USER\emsdk\upstream\emscripten\em++.exe -O3 -DNDEBUG -s USE_GLFW=3 -s ASYNCIFY -s ALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sEXPORTED_RUNTIME_METHODS=ccall @CMakeFiles\Physics_Simulation.dir\objects1.rsp -o Physics_Simulation.html @CMakeFiles\Physics_Simulation.dir\linkLibs.rsp
