@@ -1,0 +1,3 @@
+C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build_wasm/_deps/raylib-subbuild/CMakeFiles/raylib-populate.dir
+C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build_wasm/_deps/raylib-subbuild/CMakeFiles/edit_cache.dir
+C:/Users/USER/Documents/Coding Projects/Self-initiated/C++/Physics_Simulation/build_wasm/_deps/raylib-subbuild/CMakeFiles/rebuild_cache.dir

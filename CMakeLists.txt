@@ -115,3 +115,13 @@ add_custom_command(
 
 # Make this the startup project in Visual Studio, just for convenience
 set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME_SAFE})
+
+if(EMSCRIPTEN)
+    set(PLATFORM "Web" CACHE STRING "Raylib platform")
+    
+    # Force CMake to generate the .html launcher file alongside .js and .wasm
+    set_target_properties(Physics_Simulation PROPERTIES 
+        SUFFIX ".html"
+        LINK_FLAGS "-s USE_GLFW=3 -s ASYNCIFY -s ALLOW_MEMORY_GROWTH=1"
+    )
+endif()
